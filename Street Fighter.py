@@ -292,9 +292,6 @@ class Fighter():
             target.health -= 10
             target.hit = True
 
-    def end_round(self):
-        self.map += 1
-
 
 def interface():
     draw_health(fighter_1.health, 20, 20)
