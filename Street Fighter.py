@@ -12,13 +12,14 @@ YELLOW = (255, 255, 0)
 FPS = 60
 end_count = 5
 num_image = 8   # количество картинок в gif
-ch_map = 1
+map = 1
 intro_count = 3
 last_count_upd = pygame.time.get_ticks()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 clock = pygame.time.Clock()
 score = [0, 0]
 round_over = False
+game_over = False
 round_over_cd = 2000    # время между раундами
 knight_size = 180
 knight_scale_width = 2.3
@@ -76,7 +77,7 @@ class bg(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.images = []
         for i in range(num_image):
-            im = 'images/bg/bg_' + str(ch_map) + '/' + str(i) + '.gif'
+            im = 'images/bg/bg_' + str(map) + '/' + str(i) + '.gif'
             self.images.append(load_image(im))
         self.index = 0
         self.image = self.images[self.index]
@@ -188,12 +189,12 @@ class Fighter():
                 # завершение атаки
                 if self.action == 3 or self.action == 4:
                     self.is_attack = False
-                    self.attack_cd = 12
+                    self.attack_cd = 20
                 # получил урон
                 if self.action == 6:
                     self.hit = False
                     self.is_attack = False
-                    self.attack_cd = 12
+                    self.attack_cd = 20
 
     def update_action(self, new_action):
         """"вспомогательная функция
@@ -314,7 +315,6 @@ last_time = 0
 font1 = pygame.font.Font(None, 32)
 font = pygame.font.Font(None, 128)
 finished = False
-game_over = False
 
 while not finished:
     clock.tick(FPS)
@@ -326,16 +326,16 @@ while not finished:
     fighter_2.update()
     fighter_1.draw(screen)
     fighter_2.draw(screen)
+    interface()
     if intro_count <= 0:
         fighter_1.move(fighter_2, round_over)
         fighter_2.move(fighter_1, round_over)
     else:
         write_text(str(intro_count), font, RED,
-                   SCREEN_WIDTH/2, SCREEN_HEIGHT/3)
+                   SCREEN_WIDTH/2 - 24, SCREEN_HEIGHT/3)
         if pygame.time.get_ticks() - last_count_upd >= 1000:
             intro_count -= 1
             last_count_upd = pygame.time.get_ticks()
-    interface()
     if score[0] == 2 or score[1] == 2:
         game_over = True
     if game_over is False:
@@ -351,8 +351,8 @@ while not finished:
         else:
             if pygame.time.get_ticks() - round_over_time >= round_over_cd:
                 round_over = False
-                ch_map += 1
-                if ch_map == 4:
+                map += 1
+                if map == 4:
                     game_over = True
                 intro_count = 3
                 fighter_1 = Fighter(1, 150, 500, knight_data,
@@ -373,7 +373,7 @@ while not finished:
             if end_count == 1:
                 score[0] = 0
                 score[1] = 0
-                ch_map = 0
+                map = 0
                 game_over = False
                 end_count = 5
         if score[1] == 2 and end_count > 0:
@@ -385,7 +385,7 @@ while not finished:
             if end_count == 1:
                 score[0] = 0
                 score[1] = 0
-                ch_map = 0
+                map = 0
                 game_over = False
                 end_count = 5
 
