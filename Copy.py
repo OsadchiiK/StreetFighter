@@ -72,6 +72,7 @@ class Animations(Enum):
 
 class Background(pygame.sprite.Sprite):
     def __init__(self):
+        self.last_time = 0
         """"конструктор заднего фона
         загружаем картинки в массив
         """
@@ -85,10 +86,12 @@ class Background(pygame.sprite.Sprite):
         self.rect = pygame.Rect((0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT))
 
     def update(self):
-        self.index += 1
-        if self.index >= len(self.images):
-            self.index = 0
-        self.image = self.images[self.index]
+        if pygame.time.get_ticks() - self.last_time > 150:
+            self.index += 1
+            if self.index >= len(self.images):
+                self.index = 0
+            self.image = self.images[self.index]
+            self.last_time = pygame.time.get_ticks()
 
 
 class Fighter():
@@ -291,16 +294,13 @@ fighter_2 = Fighter(2, 1050, 500,
                         pygame.K_KP_ENTER, pygame.K_LEFT])
 background = Background()
 backgrounds = pygame.sprite.Group(background)
-last_time = 0
 font1 = pygame.font.Font(None, 32)
 font = pygame.font.Font(None, 128)
 finished = False
 
 while not finished:
     clock.tick(FPS)
-    if pygame.time.get_ticks() - last_time > 150:
-        backgrounds.update()
-        last_time = pygame.time.get_ticks()
+    backgrounds.update()
     backgrounds.draw(screen)
     fighter_1.update()
     fighter_2.update()
