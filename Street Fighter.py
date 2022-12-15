@@ -364,27 +364,18 @@ while not finished:
         if score[0] == 2 and end_count > 0:
             write_text('HERO KNIGHT WINS',
                        font, RED, SCREEN_WIDTH/8, SCREEN_HEIGHT/2)
-            if pygame.time.get_ticks() - round_over_time >= 1000:
-                end_count -= 1
-                round_over_time = pygame.time.get_ticks()
-            if end_count == 1:
-                score[0] = 0
-                score[1] = 0
-                map = 0
-                game_over = False
-                end_count = 5
         if score[1] == 2 and end_count > 0:
             write_text('MARTIAL HERO WINS',
                        font, RED, SCREEN_WIDTH/8, SCREEN_HEIGHT/2)
-            if pygame.time.get_ticks() - round_over_time >= 1000:
-                end_count -= 1
-                round_over_time = pygame.time.get_ticks()
-            if end_count == 1:
-                score[0] = 0
-                score[1] = 0
-                map = 0
-                game_over = False
-                end_count = 5
+        if pygame.time.get_ticks() - round_over_time >= 1000:
+            end_count -= 1
+            round_over_time = pygame.time.get_ticks()
+        if end_count == 1:
+            score[0] = 0
+            score[1] = 0
+            map = 0
+            game_over = False
+            end_count = 5
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
