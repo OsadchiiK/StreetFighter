@@ -44,35 +44,43 @@ def draw_health(health, x, y):
 
 
 def write_text(text, font, text_col, x, y):
+    """рисует текст"""
     text = font.render(text, True, text_col)
     screen.blit(text, (x, y))
 
 
 def load_image(name):
-
+    """загружаем картинки заднего фона"""
     im = pygame.image.load(name)
     scaled_im = pygame.transform.scale(im, (SCREEN_WIDTH, SCREEN_HEIGHT))
     return scaled_im
 
 
-class Animations(Enum):
+class Animation(Enum):
     IDLE = 0
     RUN = 1
     JUMP = 2
     ATTACK_1 = 3
-    ATTaCK_2 = 4
+    ATTACK_2 = 4
     GET_DAMAGE = 6
     DEATH = 7
 
 
+class Obj(Enum):
+    fighter_1 = 1
+    fighter_2 = 2
+    backgrounds = 0
+    background = 3
+
+
 class Background(pygame.sprite.Sprite):
     def __init__(self, map, end_round_time):
-        """"конструктор заднего фона
+        """конструктор заднего фона
         загружаем картинки в массив
         + индикаторы времени после раунда/игры/начала раунда
         """
         self.round_started = False
-        self.end_round_time = end_round_time
+        self.end_time = end_round_time
         self.end_count = 5
         self.last_end_time = 0
         self.intro_count = 3
@@ -112,13 +120,13 @@ class Background(pygame.sprite.Sprite):
                 self.round_started = True
 
     def end_game_count(self):
-        """"задержка в конце игры, выставляем начальные параметры"""
+        """задержка в конце игры, выставляем начальные параметры"""
         if pygame.time.get_ticks() - self.last_end_time >= TICK:
             self.end_count -= 1
             self.last_end_time = pygame.time.get_ticks()
             if self.end_count == 1:
-                fighter_1.score = 0
-                fighter_2.score = 0
+                objects[Obj.fighter_1.value].score = 0
+                objects[Obj.fighter_2.value].score = 0
                 self.map = 0
                 self.game_over = False
                 self.end_count = 5
@@ -132,11 +140,12 @@ class Background(pygame.sprite.Sprite):
 
     def end_round(self):
         self.round_over = True
-        self.end_round_time = pygame.time.get_ticks()
+        self.end_time = pygame.time.get_ticks()
 
     def round_check(self):
         """условие начала нового раунда"""
-        return pygame.time.get_ticks() - background.end_round_time >= ROUND_CD
+        return (pygame.time.get_ticks() -
+                objects[Obj.background.value].end_time) >= ROUND_CD
 
 
 class Fighter():
@@ -168,7 +177,7 @@ class Fighter():
         self.attack_type = 0
         self.attack_cd = 0
         self.is_attack = False
-        self.health = 10
+        self.health = 100
         self.size = data[0]
         self.animation_list = self.load_images(sprite_sheet, animations)
         self.action = 0
@@ -179,7 +188,7 @@ class Fighter():
         self.score = score
 
     def load_images(self, sprite_sheet, animations):
-        """"загружаем картинки, меняем размеры"""
+        """загружаем картинки, меняем размеры"""
         animation_list = []
         i = 0
         for animation in animations:
@@ -211,20 +220,20 @@ class Fighter():
         if self.health <= 0:
             self.health = 0
             self.alive = False
-            self.update_action(7)
+            self.update_action(Animation.DEATH.value)
         elif self.hit is True:
-            self.update_action(6)
+            self.update_action(Animation.GET_DAMAGE.value)
         elif self.is_attack is True:
             if self.attack_type == 1:
-                self.update_action(3)
+                self.update_action(Animation.ATTACK_1.value)
             elif self.attack_type == 2:
-                self.update_action(4)
+                self.update_action(Animation.ATTACK_2.value)
         elif self.jumps != 0:
-            self.update_action(2)
+            self.update_action(Animation.JUMP.value)
         elif self.run is True:
-            self.update_action(1)
+            self.update_action(Animation.RUN.value)
         else:
-            self.update_action(0)
+            self.update_action(Animation.IDLE.value)
         # обновляем картинку
         self.image = self.animation_list[self.action][self.frame_index]
         # достаточно ли прошло времени с прошлого обновления
@@ -239,17 +248,18 @@ class Fighter():
             else:
                 self.frame_index = 0
                 # завершение атаки
-                if self.action == 3 or self.action == 4:
+                if (self.action == Animation.ATTACK_1.value or
+                        self.action == Animation.ATTACK_2.value):
                     self.is_attack = False
                     self.attack_cd = 25
                 # получил урон
-                if self.action == 6:
+                if self.action == Animation.GET_DAMAGE.value:
                     self.hit = False
                     self.is_attack = False
                     self.attack_cd = 25
 
     def update_action(self, new_action):
-        """"вспомогательная функция
+        """вспомогательная функция
         чтобы не было ошибок если в
         анимациях разное число кадров
         """
@@ -259,7 +269,7 @@ class Fighter():
             self.update_anim = pygame.time.get_ticks()
 
     def move(self, target, round_over):
-        """"перемещение игроков"""
+        """перемещение игроков"""
         gravity = 2.4
         dx = 0
         dy = 0
@@ -324,94 +334,92 @@ class Fighter():
 
 def interface():
     """draw health bars"""
-    draw_health(fighter_1.health, 20, 20)
-    draw_health(fighter_2.health, 860, 20)
-    write_text('Hero Knight    ' + str(fighter_1.score), font1, RED, 20, 60)
-    write_text('Martial Hero    ' + str(fighter_2.score), font1, RED, 860, 60)
+    draw_health(objects[Obj.fighter_1.value].health, 20, 20)
+    draw_health(objects[Obj.fighter_2.value].health, 860, 20)
+    write_text('Hero Knight    ' + str(objects[Obj.fighter_1.value].score),
+               font1, RED, 20, 60)
+    write_text('Martial Hero    ' + str(objects[Obj.fighter_2.value].score),
+               font1, RED, 860, 60)
 
 
 def start_round():
-    """"после отсчета можно играть"""
-    if background.round_started:
-        fighter_1.move(fighter_2, background.round_over)
-        fighter_2.move(fighter_1, background.round_over)
+    """после отсчета можно играть"""
+    if objects[Obj.background.value].round_started:
+        objects[Obj.fighter_1.value].move(
+                                    objects[Obj.fighter_2.value],
+                                    objects[Obj.background.value].round_over)
+        objects[Obj.fighter_2.value].move(
+                                    objects[Obj.fighter_1.value],
+                                    objects[Obj.background.value].round_over)
     else:
-        background.intro()
+        objects[Obj.background.value].intro()
 
 
 def victory():
-    """"надписи при победе"""
-    if fighter_1.score == 2 and background.end_count > 0:
+    """надписи при победе"""
+    objects[Obj.background.value].end_game_count()
+    if objects[Obj.fighter_1.value].score == 2 > 0:
         write_text('HERO KNIGHT WINS',
                    font, RED, SCREEN_WIDTH/8, SCREEN_HEIGHT/2)
-    if fighter_2.score == 2 and background.end_count > 0:
+    if objects[Obj.fighter_2.value].score == 2 > 0:
         write_text('MARTIAL HERO WINS',
                    font, RED, SCREEN_WIDTH/8, SCREEN_HEIGHT/2)
-    background.end_game_count()
 
 
 def get_score():
     """начисляем очки"""
-    if fighter_1.alive is False:
-        fighter_2.score += 1
-        background.end_round()
-    elif fighter_2.alive is False:
-        fighter_1.score += 1
-        background.end_round()
+    if objects[Obj.fighter_1.value].alive is False:
+        objects[Obj.fighter_2.value].score += 1
+        objects[Obj.background.value].end_round()
+    elif objects[Obj.fighter_2.value].alive is False:
+        objects[Obj.fighter_1.value].score += 1
+        objects[Obj.background.value].end_round()
 
 
-fighter_1 = Fighter(1, 150, 500,
-                    knight_sheet, KNIGHT_ANIMATIONS,
-                    False, sword, [180, 2.3, 3, [78, 56]],
-                    [pygame.K_w, pygame.K_a, pygame.K_d,
-                        pygame.K_c, pygame.K_LSHIFT], 0)
-fighter_2 = Fighter(2, 1050, 500,
-                    martial_sheet, MARTIAL_ANIMATIONS,
-                    True, sword, [200, 2.5, 3.5, [80, 77]],
-                    [pygame.K_KP8, pygame.K_KP4, pygame.K_KP6,
-                        pygame.K_KP_ENTER, pygame.K_LEFT], 0)
+def init_objects(score_1, score_2, map, end_round_time):
+    """инициализируем файтеров и задний фон"""
+    fighter_1 = Fighter(1, 150, 500,
+                        knight_sheet, KNIGHT_ANIMATIONS,
+                        False, sword, [180, 2.3, 3, [78, 56]],
+                        [pygame.K_w, pygame.K_a, pygame.K_d,
+                            pygame.K_c, pygame.K_LSHIFT],
+                        score_1)
+    fighter_2 = Fighter(2, 1050, 500,
+                        martial_sheet, MARTIAL_ANIMATIONS,
+                        True, sword, [200, 2.5, 3.5, [80, 77]],
+                        [pygame.K_KP8, pygame.K_KP4, pygame.K_KP6,
+                            pygame.K_KP_ENTER, pygame.K_LEFT],
+                        score_2)
+    background = Background(map, end_round_time)
+    backgrounds = pygame.sprite.Group(background)
+    return [backgrounds, fighter_1, fighter_2, background]
 
-background = Background(1, 0)
-backgrounds = pygame.sprite.Group(background)
 
+objects = init_objects(0, 0, 1, 0)
 finished = False
-
-objects = [backgrounds, fighter_1, fighter_2]
 
 while not finished:
     clock.tick(FPS)
-    for object in objects:
-        object.update()
-        object.draw(screen)
+    for obj in objects[:3]:
+        obj.update()
+        obj.draw(screen)
     interface()
     start_round()
-    if fighter_1.score == 2 or fighter_2.score == 2:
-        background.game_over = True
-    if background.game_over is False:
-        if background.round_over is False:
+    if (objects[Obj.fighter_1.value].score == 2 or
+            objects[Obj.fighter_2.value].score == 2):
+        objects[Obj.background.value].game_over = True
+    if objects[Obj.background.value].game_over is False:
+        if objects[Obj.background.value].round_over is False:
             get_score()
         else:
-            if background.round_check():
-                background.new_round()
-                fighter_1 = Fighter(1, 150, 500,
-                                    knight_sheet, KNIGHT_ANIMATIONS,
-                                    False, sword, [180, 2.3, 3, [78, 56]],
-                                    [pygame.K_w, pygame.K_a, pygame.K_d,
-                                     pygame.K_c, pygame.K_LSHIFT],
-                                    fighter_1.score)
-                fighter_2 = Fighter(2, 1050, 500,
-                                    martial_sheet, MARTIAL_ANIMATIONS,
-                                    True, sword, [200, 2.5, 3.5, [80, 77]],
-                                    [pygame.K_KP8, pygame.K_KP4, pygame.K_KP6,
-                                     pygame.K_KP_ENTER, pygame.K_LEFT],
-                                    fighter_2.score)
-                background = Background(background.map,
-                                        background.end_round_time)
-                backgrounds = pygame.sprite.Group(background)
-                objects = [backgrounds, fighter_1, fighter_2]
+            if objects[Obj.background.value].round_check():
+                objects[Obj.background.value].new_round()
+                objects = init_objects(objects[Obj.fighter_1.value].score,
+                                       objects[Obj.fighter_2.value].score,
+                                       objects[Obj.background.value].map,
+                                       objects[Obj.background.value].end_time)
     else:
         victory()
-
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             finished = True
